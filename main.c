@@ -1,7 +1,5 @@
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_events.h>
 #include <SDL3/SDL_main.h>
-#include <SDL3/SDL_render.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,13 +18,41 @@ struct Game {
 };
 
 bool game_init_sdl(struct Game *g);
-bool game_new(struct Game *g);
-void game_free(struct Game *g);
+bool game_new(struct Game **game);
+void game_free(struct Game **game);
 void game_events(struct Game *g);
 void game_draw(struct Game *g);
 void game_run(struct Game *g);
 
-bool game_new(struct Game *g) {
+bool game_init_sdl(struct Game *g) {
+  if (!SDL_Init(SDL_FLAGS)) {
+    fprintf(stderr, "Error initializing SDL3: %s\n", SDL_GetError());
+    return false;
+  }
+
+  g->window = SDL_CreateWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
+  if (!g->window) {
+    fprintf(stderr, "Error creating Window: %s\n", SDL_GetError());
+    return false;
+  }
+
+  g->renderer = SDL_CreateRenderer(g->window, NULL);
+  if (!g->renderer) {
+    fprintf(stderr, "Error creating Renderer: %s\n", SDL_GetError());
+    return false;
+  }
+
+  return true;
+}
+
+bool game_new(struct Game **game) {
+  *game = calloc(1, sizeof(struct Game));
+  if (*game == NULL) {
+    fprintf(stderr, "Error Calloc of New Game.\n");
+    return false;
+  }
+  struct Game *g = *game;
+
   if (!game_init_sdl(g)) {
     return false;
   }
@@ -36,42 +62,29 @@ bool game_new(struct Game *g) {
   return true;
 }
 
-bool game_init_sdl(struct Game *g) {
-  if (!SDL_Init(SDL_FLAGS)) {
-    fprintf(stderr, "Error initializing SDL3: %s\n", SDL_GetError());
-    return false;
+void game_free(struct Game **game) {
+  if (*game) {
+    struct Game *g = *game;
+
+    if (g->renderer) {
+      SDL_DestroyRenderer(g->renderer);
+      g->renderer = NULL;
+    }
+
+    if (g->window) {
+      SDL_DestroyWindow(g->window);
+      g->window = NULL;
+    }
+
+    SDL_Quit();
+
+    free(g);
+
+    g = NULL;
+    *game = NULL;
+
+    printf("All Clean!\n");
   }
-
-  g->window = SDL_CreateWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
-
-  if (!g->window) {
-    fprintf(stderr, "Error creating Window: %s\n", SDL_GetError());
-    return false;
-  }
-
-  g->renderer = SDL_CreateRenderer(g->window, NULL);
-
-  if (!g->renderer) {
-    fprintf(stderr, "Error creating Renderer: %s\n", SDL_GetError());
-    return false;
-  }
-
-  return true;
-}
-
-void game_free(struct Game *g) {
-  if (g->window) {
-    SDL_DestroyWindow(g->window);
-    g->window = NULL;
-  }
-
-  if (g->renderer) {
-    SDL_DestroyRenderer(g->renderer);
-    g->renderer = NULL;
-  }
-
-  SDL_Quit();
-  printf("All Clean!\n");
 }
 
 void game_events(struct Game *g) {
@@ -79,6 +92,15 @@ void game_events(struct Game *g) {
     switch (g->event.type) {
     case SDL_EVENT_QUIT:
       g->is_running = false;
+      break;
+    case SDL_EVENT_KEY_DOWN:
+      switch (g->event.key.scancode) {
+      case SDL_SCANCODE_ESCAPE:
+        g->is_running = false;
+        break;
+      default:
+        break;
+      }
       break;
     default:
       break;
@@ -88,24 +110,28 @@ void game_events(struct Game *g) {
 
 void game_draw(struct Game *g) {
   SDL_RenderClear(g->renderer);
+
   SDL_RenderPresent(g->renderer);
 }
 
 void game_run(struct Game *g) {
   while (g->is_running) {
-    game_events(g); // checks events
-    game_draw(g);   // draws in the renderer
-    SDL_Delay(16);  // 60hz screen refresh
+    game_events(g);
+
+    game_draw(g);
+
+    SDL_Delay(16);
   }
 }
 
 int main(void) {
   bool exit_status = EXIT_FAILURE;
 
-  struct Game game = {0};
+  struct Game *game = NULL;
 
   if (game_new(&game)) {
-    game_run(&game);
+    game_run(game);
+
     exit_status = EXIT_SUCCESS;
   }
 
