@@ -58,6 +58,9 @@ void game_free(struct Game *g) {
 }
 
 void game_run(struct Game *g) {
+  SDL_Delay(100);
+  SDL_SetRenderDrawColor(g->renderer, 128, 0, 128, 255);
+
   SDL_RenderClear(g->renderer);
 
   SDL_RenderPresent(g->renderer);
