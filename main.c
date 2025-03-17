@@ -20,10 +20,21 @@ struct Game {
 };
 
 bool game_init_sdl(struct Game *g);
+bool game_new(struct Game *g);
 void game_free(struct Game *g);
 void game_events(struct Game *g);
 void game_draw(struct Game *g);
 void game_run(struct Game *g);
+
+bool game_new(struct Game *g) {
+  if (!game_init_sdl(g)) {
+    return false;
+  }
+
+  g->is_running = true;
+
+  return true;
+}
 
 bool game_init_sdl(struct Game *g) {
   if (!SDL_Init(SDL_FLAGS)) {
@@ -93,7 +104,7 @@ int main(void) {
 
   struct Game game = {0};
 
-  if (game_init_sdl(&game)) {
+  if (game_new(&game)) {
     game_run(&game);
     exit_status = EXIT_SUCCESS;
   }
