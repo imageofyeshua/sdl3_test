@@ -1,6 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_render.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +32,13 @@ bool game_init_sdl(struct Game *g) {
     return false;
   }
 
+  g->renderer = SDL_CreateRenderer(g->window, NULL);
+
+  if (!g->renderer) {
+    fprintf(stderr, "Error creating Renderer: %s\n", SDL_GetError());
+    return false;
+  }
+
   return true;
 }
 
@@ -39,6 +46,11 @@ void game_free(struct Game *g) {
   if (g->window) {
     SDL_DestroyWindow(g->window);
     g->window = NULL;
+  }
+
+  if (g->renderer) {
+    SDL_DestroyRenderer(g->renderer);
+    g->renderer = NULL;
   }
 
   SDL_Quit();
