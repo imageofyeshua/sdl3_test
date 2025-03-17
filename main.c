@@ -18,6 +18,7 @@ struct Game {
 
 bool game_init_sdl(struct Game *g);
 void game_free(struct Game *g);
+void game_run(struct Game *g);
 
 bool game_init_sdl(struct Game *g) {
   if (!SDL_Init(SDL_FLAGS)) {
@@ -56,16 +57,23 @@ void game_free(struct Game *g) {
   SDL_Quit();
 }
 
+void game_run(struct Game *g) {
+  SDL_RenderClear(g->renderer);
+
+  SDL_RenderPresent(g->renderer);
+
+  SDL_Delay(5000);
+}
+
 int main(void) {
   bool exit_status = EXIT_FAILURE;
 
   struct Game game = {0};
 
   if (game_init_sdl(&game)) {
+    game_run(&game);
     exit_status = EXIT_SUCCESS;
   }
-
-  SDL_Delay(5000);
 
   game_free(&game);
 
